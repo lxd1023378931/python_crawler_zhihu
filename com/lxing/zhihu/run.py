@@ -5,3 +5,5 @@ try:
     ZhiHuDeal(keyword)
 except Exception as e:
     print(e)
+finally:
+    print("程序执行结束。")

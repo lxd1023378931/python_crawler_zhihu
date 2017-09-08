@@ -1,10 +1,4 @@
-import datetime
-import json
-import os
-import re
-import sys
-import time
-
+import datetime, json, os, re, sys, time
 from bs4 import BeautifulSoup
 
 from com.lxing.zhihu.zhihu_search import ZhiHuSearch

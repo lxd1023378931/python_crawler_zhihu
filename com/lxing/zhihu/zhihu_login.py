@@ -7,14 +7,14 @@ class ZhiHuLogin(object):
     loginURL = r'http://www.zhihu.com/login/{0}'
     homeURL = r'http://www.zhihu.com'
     captchaURL = r"http://www.zhihu.com/captcha.gif"
-    user_agent_list = ['Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0'
-                  ,'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36'
-                  ,'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
-                  ,'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0'
-                  ,'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'
-                  ,'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36']
+    user_agent_list = ['Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0)Gecko/20100101 Firefox/55.0'
+                  ,'Mozilla/5.0 (Windows NT 6.1; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90Safari/537.36'
+                  ,'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0;rv:11.0) like Gecko'
+                  ,'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0)Gecko/20100101 Firefox/54.0'
+                  ,'Mozilla/5.0 (Windows NT 6.1; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113Safari/537.36'
+                  ,'Mozilla/5.0 (Windows NT 10.0; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.104Safari/537.36']
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0)Gecko/20100101 Firefox/55.0",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
         "Host": "www.zhihu.com",
@@ -26,22 +26,30 @@ class ZhiHuLogin(object):
     cookieFile = os.path.join(sys.path[0], "cookie")
 
     def __init__(self):
+        self.__user_auth = queue.Queue()
+        self.__user_agent = queue.Queue()
+        self.__islogin = False
         os.chdir(sys.path[0])
         self.__session = requests.Session()
         authorization_path = os.path.join(sys.path[0], 'authorization')
+
         if os.path.exists(authorization_path) and os.path.isfile(authorization_path):
             with open(os.path.join(authorization_path), 'r') as f:
-                auth = f.read()
-                if not auth == '':
-                    self.headers['authorization'] = auth
+                while True:
+                    auth = f.readline()
+                    if not auth or auth == '':
+                        break
+                    else:
+                        self.__user_auth.put(auth)
         else:
             print("Error:因登录系统无法获取身份认证信息authorization，请自行获取并在同级目录下新建名为authorization文件并将authorization写入")
-        self.__session.headers = self.headers
-        self.__cookie = self.loadCookie()
-        self.__user_agent = queue.Queue()
+
         for user_agent in self.user_agent_list:
             self.__user_agent.put(user_agent)
             self.__user_agent.put(user_agent)
+
+        self.__session.headers = self.headers
+        self.__cookie = self.loadCookie()
         if self.__cookie:
             self.__session.cookies.update(self.__cookie)
         else:
@@ -51,7 +59,9 @@ class ZhiHuLogin(object):
             self.__login()
 
     def __login(self):
-        self.__loginURL = self.loginURL.format(self.__getUsernameType())
+        self.__islogin = True
+        self.__loginURL = self.loginURL.format(self.__getUsernameType
+())
         html = self.open(self.homeURL).text
         soup = BS(html, "html.parser")
         _xsrf = soup.find("input", {"name": "_xsrf"})["value"]
@@ -104,13 +114,22 @@ class ZhiHuLogin(object):
     def open(self, url, delay=2, timeout=20):
         if delay:
             time.sleep(delay)
+        print(self.__user_agent.qsize())
         user_agent = self.__user_agent.get()
         self.headers['User-Agent'] = user_agent
         self.__user_agent.put(user_agent)
+
+        if not self.__islogin:
+            user_auth = self.__user_auth.get()
+            print(user_auth)
+            self.headers['authorization'] = user_auth
+            self.__user_auth.put(user_auth)
+        else:
+            self.__islogin = False
+
         self.__session.headers = self.headers
         return self.__session.get(url, timeout=timeout)
 
     def getSession(self):
         return self.__session
-
 
