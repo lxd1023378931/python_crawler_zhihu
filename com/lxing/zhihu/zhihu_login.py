@@ -40,7 +40,7 @@ class ZhiHuLogin(object):
                     if not auth or auth == '':
                         break
                     else:
-                        self.__user_auth.put(auth)
+                        self.__user_auth.put(str(auth))
         else:
             print("Error:因登录系统无法获取身份认证信息authorization，请自行获取并在同级目录下新建名为authorization文件并将authorization写入")
 
@@ -60,8 +60,7 @@ class ZhiHuLogin(object):
 
     def __login(self):
         self.__islogin = True
-        self.__loginURL = self.loginURL.format(self.__getUsernameType
-())
+        self.__loginURL = self.loginURL.format(self.__getUsernameType())
         html = self.open(self.homeURL).text
         soup = BS(html, "html.parser")
         _xsrf = soup.find("input", {"name": "_xsrf"})["value"]
@@ -111,22 +110,17 @@ class ZhiHuLogin(object):
                 return cookie
         return None
 
-    def open(self, url, delay=2, timeout=20):
+    def open(self, url, auth=False, delay=10, timeout=20):
         if delay:
             time.sleep(delay)
-        print(self.__user_agent.qsize())
         user_agent = self.__user_agent.get()
-        self.headers['User-Agent'] = user_agent
+        self.headers['User-Agent'] = ''+user_agent+''
         self.__user_agent.put(user_agent)
 
-        if not self.__islogin:
+        if auth:
             user_auth = self.__user_auth.get()
-            print(user_auth)
-            self.headers['authorization'] = user_auth
+            self.headers['authorization'] = user_auth.replace("\n", '')
             self.__user_auth.put(user_auth)
-        else:
-            self.__islogin = False
-
         self.__session.headers = self.headers
         return self.__session.get(url, timeout=timeout)
 

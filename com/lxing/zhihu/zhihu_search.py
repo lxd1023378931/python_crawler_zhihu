@@ -7,9 +7,9 @@ class ZhiHuSearch(object):
         self.__search_text = text
         self.__loginclient = ZhiHuLogin()
 
-    def do_search(self, url, addq):
+    def do_search(self, url, addq, auth=False):
         self.searchURL = url
         if addq:
             self.searchURL = self.homeURL + self.searchURL + self.__search_text
-        soup = self.__loginclient.open(self.searchURL)
+        soup = self.__loginclient.open(self.searchURL, auth=auth)
         return soup

@@ -2,6 +2,7 @@ import datetime, json, os, re, sys, time
 from bs4 import BeautifulSoup
 
 from com.lxing.zhihu.zhihu_search import ZhiHuSearch
+from com.lxing.zhihu.zhihu_picdownload import ZhiHuPicDownload
 
 
 class ZhiHuDeal(object):
@@ -15,6 +16,7 @@ class ZhiHuDeal(object):
     def __init__(self, text):
         self.__text = text
         self.__search = ZhiHuSearch(self.__text)
+        self.__zhihuPic = ZhiHuPicDownload(self.__text, 5)
         self.__dirpath = os.path.join(sys.path[0], datetime.datetime.now().strftime('%Y-%m-%d'))
         if not os.path.exists(self.__dirpath) or not os.path.isdir(self.__dirpath):
             os.mkdir(self.__dirpath)
@@ -35,8 +37,11 @@ class ZhiHuDeal(object):
         else:
             print("服务器链接失败:"+str(result.status_code))
             return
+        # pic_url = re.findall('"objURL":"(.*?)",', html, re.S)
+        # print(pic_url)
         soup = BeautifulSoup(html, "html.parser")
         lilist = soup.find_all("li", attrs={'class': re.compile("item")})
+
         self.__deal_list_subject(lilist)
         self.__search_offset += self.__search_limit
         if len(lilist) is not 0:
@@ -59,7 +64,10 @@ class ZhiHuDeal(object):
         result = self.__search.do_search(self.__search.homeURL + url, False)
         if result.status_code == 200:
             html = result.content.decode('utf-8')
+
             soup = BeautifulSoup(html, "html.parser")
+
+            self.__findAndDown(html, {'class': re.compile("origin_image zh-lightbox-thumb lazy")})
             question = soup.find('meta', attrs={'itemprop': 'url'}).get("content").replace(self.__search.homeURL+"/question/","")
 
             data_state = soup.find('div', attrs={'id': 'data'}).get("data-state")
@@ -79,12 +87,13 @@ class ZhiHuDeal(object):
             return
 
     def __continueLoadAnswers(self, url):
-        result = self.__search.do_search(url.replace('limit=3', 'limit=100'), False)
+        result = self.__search.do_search(url.replace('limit=3', 'limit=100'), False, auth=True)
         if result.status_code == 200:
             response = json.loads(result.content.decode('utf-8'))
             paging = response['paging']
             datas = response['data']
             for data in datas:
+                self.__findAndDown(data['content'], {})
                 self.__write('\n'+BeautifulSoup(data['content'], "html.parser").get_text()+'\n', data['author']['name'])
             if not paging['is_end']:
                 self.__continueLoadAnswers(paging['next'])
@@ -101,3 +110,11 @@ class ZhiHuDeal(object):
                 f.write("\n**************************"+author+"\n")
             f.write(content)
         f.close()
+
+    def __findAndDown(self, html, attrs):
+        # 寻找图片并下载
+        imglist = BeautifulSoup(html, "html.parser").find_all('img', attrs=attrs)
+        self.__piclist = []
+        for img in imglist:
+            self.__piclist.append(img.get('data-original'))
+        self.__zhihuPic.doDownload(self.__piclist)
