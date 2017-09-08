@@ -22,11 +22,10 @@ class ZhiHuLogin(object):
         "Accept-Language": "zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3",
         "authorization": ""
     }
-    proxies = {'http': 'http://120.76.55.49:8088'}
     captchaFile = os.path.join(sys.path[0], "captcha.gif")
     cookieFile = os.path.join(sys.path[0], "cookie")
 
-    def __init__(self ):
+    def __init__(self):
         os.chdir(sys.path[0])
         self.__session = requests.Session()
         authorization_path = os.path.join(sys.path[0], 'authorization')
@@ -46,8 +45,8 @@ class ZhiHuLogin(object):
         if self.__cookie:
             self.__session.cookies.update(self.__cookie)
         else:
-            print("没有找到cookie文件，请调用login方法登录一次！")
-            self.__username = input("\n请输入手机号:")
+            print("请登录！")
+            self.__username = input("\n请输入用户名:")
             self.__password = input("\n请输入密码:")
             self.__login()
 
@@ -61,7 +60,6 @@ class ZhiHuLogin(object):
             captcha = self.open(self.captchaURL).content
             with open(self.captchaFile, 'wb') as output:
                 output.write(captcha)
-            print("=" * 50)
             print("已打开验证码图片，请识别:")
             subprocess.call(self.captchaFile, shell=True)
             captcha = input("请输入验证码:")
@@ -75,7 +73,6 @@ class ZhiHuLogin(object):
                 "captcha": captcha
             }
             res = self.__session.post(self.__loginURL, data=data)
-            print("=" * 50)
             if res.status_code == 200:
                 print("登录成功")
                 self.__saveCookie()
@@ -93,27 +90,18 @@ class ZhiHuLogin(object):
         return self.TYPE_EMAIL
 
     def __saveCookie(self):
-        """cookies 序列化到文件
-        即把dict对象转化成字符串保存
-        """
         with open(self.cookieFile, "w") as output:
             sessions = self.__session.cookies
             cookies = sessions.get_dict()
             json.dump(cookies, output)
-            print("=" * 50)
-            print("已在同目录下生成cookie文件：", self.cookieFile)
-
     def loadCookie(self):
-        """读取cookie文件，返回反序列化后的dict对象，没有则返回None"""
         if os.path.exists(self.cookieFile):
-            print("=" * 50)
             with open(self.cookieFile, "r") as f:
                 cookie = json.load(f)
                 return cookie
         return None
 
-    def open(self, url, delay=2, timeout=10):
-        """打开网页，返回<a href="https://www.baidu.com/s?wd=Response%E5%AF%B9%E8%B1%A1&tn=44039180_cpr&fenlei=mv6quAkxTZn0IZRqIHckPjm4nH00T1dBPAFhPWf3n1mzPymvmhf0IAYqnWm3PW64rj0d0AP8IA3qPjfsn1bkrjKxmLKz0ZNzUjdCIZwsrBtEXh9GuA7EQhF9pywdQhPEUiqkIyN1IA-EUBtdPWc3nHc4rH6zP1T4njf3Pjf" target="_blank" class="baidu-highlight">Response对象</a>"""
+    def open(self, url, delay=2, timeout=20):
         if delay:
             time.sleep(delay)
         user_agent = self.__user_agent.get()

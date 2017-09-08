@@ -85,7 +85,7 @@ class ZhiHuDeal(object):
             return
 
     def __continueLoadAnswers(self, url):
-        result = self.__search.do_search(url, False)
+        result = self.__search.do_search(url.replace('limit=3', 'limit=100'), False)
         if result.status_code == 200:
             response = json.loads(result.content.decode('utf-8'))
             paging = response['paging']
