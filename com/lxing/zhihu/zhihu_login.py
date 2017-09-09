@@ -42,7 +42,9 @@ class ZhiHuLogin(object):
                     else:
                         self.__user_auth.put(str(auth))
         else:
-            print("Error:因登录系统无法获取身份认证信息authorization，请自行获取并在同级目录下新建名为authorization文件并将authorization写入")
+            print("Error:因登录系统无法获取身份认证信息authorization，"
+                  "请自行获取并在同级目录下新建名为authorization文件并将authorization写入，"
+                  "换行分隔多个。")
 
         for user_agent in self.user_agent_list:
             self.__user_agent.put(user_agent)
@@ -87,8 +89,7 @@ class ZhiHuLogin(object):
                 self.__saveCookie()
                 break
             else:
-                print("登录失败")
-                print("错误信息 --->", res.json()["msg"])
+                print("登录失败,错误信息:", res.json()["msg"])
 
     def __getUsernameType(self):
         """判断用户名类型
@@ -113,6 +114,7 @@ class ZhiHuLogin(object):
     def open(self, url, auth=False, delay=10, timeout=20):
         if delay:
             time.sleep(delay)
+
         user_agent = self.__user_agent.get()
         self.headers['User-Agent'] = ''+user_agent+''
         self.__user_agent.put(user_agent)
@@ -123,7 +125,6 @@ class ZhiHuLogin(object):
             self.__user_auth.put(user_auth)
         self.__session.headers = self.headers
         return self.__session.get(url, timeout=timeout)
-
     def getSession(self):
         return self.__session
 

@@ -6,12 +6,12 @@ from com.lxing.zhihu.zhihu_picdownload import ZhiHuPicDownload
 
 
 class ZhiHuDeal(object):
-    __search = None
+    #获取话题列表页面url
     __search_url = '/search?type=content&q='
-    __search_more = "/r/search?correction=1&type=content&offset="
+    #获取更多话题列表url
+    __search_more = "/r/search?correction=1&type=content&offset={0}&q="
     __search_offset = 0
     __search_limit = 10
-    __answers_more_include = 'data[*].is_normal,admin_closed_comment,reward_info,is_collapsed,annotation_action,annotation_detail,collapse_reason,is_sticky,collapsed_by,suggest_edit,comment_count,can_comment,content,editable_content,voteup_count,reshipment_settings,comment_permission,created_time,updated_time,review_info,question,excerpt,relationship.is_authorized,is_author,voting,is_thanked,is_nothelp,upvoted_followees;data[*].mark_infos[*].url;data[*].author.follower_count,badge[?(type=best_answerer)].topics'
     __answers_more_limit = 20
     def __init__(self, text):
         self.__text = text
@@ -37,15 +37,13 @@ class ZhiHuDeal(object):
         else:
             print("服务器链接失败:"+str(result.status_code))
             return
-        # pic_url = re.findall('"objURL":"(.*?)",', html, re.S)
-        # print(pic_url)
         soup = BeautifulSoup(html, "html.parser")
         lilist = soup.find_all("li", attrs={'class': re.compile("item")})
 
         self.__deal_list_subject(lilist)
         self.__search_offset += self.__search_limit
         if len(lilist) is not 0:
-            search_more = self.__search_more + str(self.__search_offset) + "&q="
+            search_more = self.__search_more.format(str(self.__search_offset))
             self.__findAndDealSubject(search_more)
 
     def __deal_list_subject(self, list):
@@ -87,7 +85,7 @@ class ZhiHuDeal(object):
             return
 
     def __continueLoadAnswers(self, url):
-        result = self.__search.do_search(url.replace('limit=3', 'limit=100'), False, auth=True)
+        result = self.__search.do_search(url.replace('limit=3', 'limit=' + str(self.__answers_more_limit)), False, auth=True)
         if result.status_code == 200:
             response = json.loads(result.content.decode('utf-8'))
             paging = response['paging']
